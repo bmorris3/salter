@@ -13,6 +13,6 @@ Let's use ensemble transit data. If we use transits with many different impact p
 
 ## Prep your local DB
 In the repo, run:
-```python
+```
 python -c "from salter.cache import get_light_curves; get_light_curves()"
 ```
