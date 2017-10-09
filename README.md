@@ -10,3 +10,9 @@ How else can we constrain the starspots/activity as a function of latitude?!
 
 ## Idea
 Let's use ensemble transit data. If we use transits with many different impact parameters, we'll be sensitive to a wide range of latitudes. Now the game is measuring the in- vs. out-of-transit scatter as a function of latitude due to starspot occultations.
+
+## Prep your local DB
+In the repo, run:
+```python
+python -c "from salter.cache import get_light_curves; get_light_curves()"
+```
