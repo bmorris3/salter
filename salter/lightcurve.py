@@ -18,9 +18,8 @@ import batman
 __all__ = ['LightCurve', 'concatenate_transit_light_curves',
            'TransitLightCurve', 'concatenate_light_curves']
 
-HDF5_PATH = os.path.join(os.path.abspath(__file__), os.path.pardir,
-                         'data', 'light_curves.hdf5')
-
+HDF5_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.path.pardir, 'data', 'light_curves.hdf5')
 
 def generate_lc_depth(times, depth, transit_params):
     """

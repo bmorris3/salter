@@ -11,8 +11,8 @@ from astropy.utils.console import ProgressBar
 
 __all__ = ['get_light_curves']
 
-kic_numbers_path = os.path.join(os.path.pardir, os.path.abspath(__file__),
-                                'data', 'kics.csv')
+kic_numbers_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                os.path.pardir, 'data', 'kics.csv')
 
 
 def get_light_curves():
