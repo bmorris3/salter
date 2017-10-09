@@ -19,8 +19,9 @@ import h5py
 __all__ = ['LightCurve', 'concatenate_transit_light_curves',
            'TransitLightCurve', 'concatenate_light_curves']
 
-HDF5_PATH = os.path.join(os.path.pardir(os.path.abspath(__file__)),
+HDF5_PATH = os.path.join(os.path.abspath(__file__), os.path.pardir,
                          'data', 'light_curves.hdf5')
+
 
 def generate_lc_depth(times, depth, transit_params):
     """
