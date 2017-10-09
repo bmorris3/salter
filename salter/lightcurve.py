@@ -21,6 +21,7 @@ __all__ = ['LightCurve', 'concatenate_transit_light_curves',
 HDF5_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 os.path.pardir, 'data', 'light_curves.hdf5')
 
+
 def generate_lc_depth(times, depth, transit_params):
     """
     Generate a model transit light curve.
@@ -88,9 +89,11 @@ class LightCurve(object):
 
     @classmethod
     def from_hdf5(cls, hdf5_file, kic):
-        return cls(times=hdf5_file[str(kic)][:, 0],
-                   fluxes=hdf5_file[str(kic)][:, 1],
-                   errors=hdf5_file[str(kic)][:, 2])
+        mask_nans = np.logical_not(np.isnan(hdf5_file[str(kic)][:, 0]))
+        return cls(times=hdf5_file[str(kic)][:, 0][mask_nans] + 2454833.0,
+                   fluxes=hdf5_file[str(kic)][:, 1][mask_nans],
+                   errors=hdf5_file[str(kic)][:, 2][mask_nans],
+                   name=kic)
 
     def phases(self, params):
         phase = ((self.times.jd - params.t0) % params.per)/params.per
