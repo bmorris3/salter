@@ -14,7 +14,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import shutil
 import batman
-import h5py
 
 __all__ = ['LightCurve', 'concatenate_transit_light_curves',
            'TransitLightCurve', 'concatenate_light_curves']
