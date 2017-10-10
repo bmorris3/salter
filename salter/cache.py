@@ -12,12 +12,12 @@ from astropy.utils.data import download_file
 from astropy.table import join
 from astropy.table import Column
 
-__all__ = ['cache_light_curves', 'get_joined_table', 'cache_joined_table']
+__all__ = ['cache_light_curves', 'get_planets_table', 'cache_joined_table']
 
 kic_numbers_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 os.path.pardir, 'data', 'kics.csv')
 
-joined_table_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+planet_table_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                  os.path.pardir, 'data', 'joined_table.csv')
 
 light_curves_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -87,14 +87,14 @@ def cache_joined_table():
 
     joined_table = join(eod_table2, nea_table2, keys=['kepid'])
 
-    ascii.write(joined_table, joined_table_path, format='csv')
+    ascii.write(joined_table, planet_table_path, format='csv')
 
 
-def get_joined_table():
-    if not os.path.exists(joined_table_path):
+def get_planets_table():
+    if not os.path.exists(planet_table_path):
         raise ValueError("You must run salter.cache.cache_joined_table first "
                          "before you can run get_joined_table")
-    table = ascii.read(joined_table_path, format='csv')
+    table = ascii.read(planet_table_path, format='csv')
 
     # Toss out multis
     first_kois_only = np.array([koi.endswith('01')

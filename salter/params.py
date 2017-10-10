@@ -15,8 +15,8 @@ def kic_to_params(table, kic):
 
     Examples
     --------
-    >>> from salter import get_joined_table, kic_to_params
-    >>> table = get_joined_table()
+    >>> from salter import get_planets_table, kic_to_params
+    >>> table = get_planets_table()
     >>> params = kic_to_params(table, 9705459)
     """
     params = batman.TransitParams()       #object to store transit parameters
