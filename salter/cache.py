@@ -51,10 +51,10 @@ def cache_light_curves():
                 lightcurves = star.get_light_curves(short_cadence=False)
 
                 # Loop over the datasets and read in the data.
-                time, flux, ferr, quality = [], [], [], []
-                n_columns = 4
+                time, flux, ferr, quality, quarter = [], [], [], [], []
+                n_columns = 5
 
-                for lc in lightcurves:
+                for i, lc in enumerate(lightcurves):
                     with lc.open() as lc_file:
                         # The lightcurve data are in the first FITS HDU.
                         hdu_data = lc_file[1].data
@@ -63,8 +63,9 @@ def cache_light_curves():
                         flux.append(hdu_data["sap_flux"])
                         ferr.append(hdu_data["sap_flux_err"])
                         quality.append(hdu_data["sap_quality"])
+                        quarter.append(i * np.ones_like(hdu_data["time"]))
 
-                data = np.vstack(list(map(np.concatenate, [time, flux, ferr, quality]))).T
+                data = np.vstack(list(map(np.concatenate, [time, flux, ferr, quality, quarter]))).T
                 f.create_dataset(str(kic), data=data)
                 f.flush()
                 bar.update()
