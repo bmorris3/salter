@@ -103,7 +103,8 @@ class LightCurve(object):
                    errors=hdf5_file[str(kic)][:, 2][mask_nans],
                    name=kic, params=params)
 
-    def phases(self, params):
+    def phases(self):
+        params = self.params
         phase = ((self.times.jd - params.t0) % params.per)/params.per
         phase[phase > 0.5] -= 1.0
         return phase
@@ -455,7 +456,7 @@ class LightCurve(object):
                            errors=self.errors[index:], quarters=self.quarters[index:],
                            name=self.name))
 
-    def transit_model(self, short_cadence=True):
+    def transit_model(self, short_cadence=False):
         transit_params = self.params
         # (1 * u.min).to(u.day).value
         if short_cadence:
