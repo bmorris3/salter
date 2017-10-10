@@ -10,7 +10,7 @@ from astropy.utils.console import ProgressBar
 from astropy.utils.data import download_file
 from astropy.table import Column, unique, join
 
-__all__ = ['cache_light_curves', 'get_planets_table', 'cache_joined_table',
+__all__ = ['cache_light_curves', 'get_planets_table', 'cache_planets_table',
            'planet_props']
 
 
@@ -70,7 +70,7 @@ def cache_light_curves():
     f.close()
 
 
-def cache_joined_table():
+def cache_planets_table():
     """
     Cache a joined table containing data from the NASA Exoplanet Archive and
     the Exoplanet Orbit Database.
@@ -93,7 +93,7 @@ def cache_joined_table():
 
 def get_planets_table():
     if not os.path.exists(planet_table_path):
-        raise ValueError("You must run salter.cache.cache_joined_table first "
+        raise ValueError("You must run salter.cache.cache_planets_table first "
                          "before you can run get_joined_table")
     table = ascii.read(planet_table_path, format='csv')
 

@@ -18,8 +18,12 @@ python -c "from salter.cache import cache_light_curves; cache_light_curves()"
 ```
 Run this to cache a local copy of the joined tables from the NASA Exoplanet Archive and the Exoplanet Orbit Database:
 ```
-python -c "from salter.cache import cache_joined_table; cache_joined_table()"
+python -c "from salter.cache import cache_planets_table; cache_planets_table()"
 ```
+
+## Example notebook: 
+
+Open up the notebook `show_lc.ipynb` to see what the package can do.
 
 ## Dependencies
 
