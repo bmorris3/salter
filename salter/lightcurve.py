@@ -508,7 +508,7 @@ class TransitLightCurve(LightCurve):
         self.rescaled = False
         self.params = params
 
-    def fit_linear_baseline(self, cadence=1*u.min,
+    def fit_linear_baseline(self, cadence=30*u.min,
                             return_near_transit=False, plots=False):
         """
         Find OOT portions of transit light curve using similar method to
@@ -555,7 +555,7 @@ class TransitLightCurve(LightCurve):
         else:
             return linear_baseline
 
-    def remove_linear_baseline(self, plots=False, cadence=1*u.min):
+    def remove_linear_baseline(self, plots=False, cadence=30*u.min):
         """
         Find OOT portions of transit light curve using similar method to
         `LightCurve.mask_out_of_transit`, fit linear baseline to OOT,
@@ -586,6 +586,38 @@ class TransitLightCurve(LightCurve):
             ax[1].plot(self.times.jd, self.fluxes, 'o')
             plt.show()
 
+    def remove_polynomial_baseline(self, order=2, plots=False, cadence=30*u.min):
+        """
+        Find OOT portions of transit light curve using similar method to
+        `LightCurve.mask_out_of_transit`, fit linear baseline to OOT,
+        divide whole light curve by that fit.
+
+        Parameters
+        ----------
+        cadence : `~astropy.units.Quantity` (optional)
+            Length of the exposure time for each flux. Default is 1 min.
+        plots : bool (optional)
+            Show diagnostic plots.
+        """
+        params = self.params
+        poly_baseline, near_transit = self.fit_polynomial_baseline(order=order,
+                                                                   cadence=cadence,
+                                                                   return_near_transit=True)
+        poly_baseline_fit = np.polyval(poly_baseline, self.times.jd)
+        self.fluxes = self.fluxes / poly_baseline_fit
+        self.errors = self.errors / poly_baseline_fit
+
+        if plots:
+            fig, ax = plt.subplots(1, 2, figsize=(15,6))
+            ax[0].axhline(1, ls='--', color='k')
+            ax[0].plot(self.times.jd, self.fluxes, 'o')
+            ax[0].set_title('before trend removal')
+
+            ax[1].set_title('after trend removal')
+            ax[1].axhline(1, ls='--', color='k')
+            ax[1].plot(self.times.jd, self.fluxes, 'o')
+            plt.show()
+
     def scale_by_baseline(self, linear_baseline_params):
         if not self.rescaled:
             scaling_vector = np.polyval(linear_baseline_params, self.times.jd)
@@ -593,42 +625,54 @@ class TransitLightCurve(LightCurve):
             self.errors *= scaling_vector
             self.rescaled = True
 
-
-    def fit_polynomial_baseline(self, order=2, cadence=1*u.min,
-                                plots=False, mask=None):
+    def fit_polynomial_baseline(self, order=2, cadence=30*u.min,
+                                plots=False, return_near_transit=False):
         """
         Find OOT portions of transit light curve using similar method to
-        `LightCurve.mask_out_of_transit`, fit linear baseline to OOT
+        `LightCurve.mask_out_of_transit`, fit linear baseline to OOT.
+
+        Parameters
+        ----------
+        cadence : `~astropy.units.Quantity` (optional)
+            Length of the exposure time for each flux. Default is 30 min.
+        return_near_transit : bool (optional)
+            Return the mask for times in-transit.
+
+        Returns
+        -------
+        polynomial_baseline : `numpy.ndarray`
+            Baseline trend of out-of-transit fluxes
+        near_transit : `numpy.ndarray` (optional)
+            The mask for times in-transit.
         """
         params = self.params
-        if mask is None:
-            mask = np.ones(len(self.fluxes)).astype(bool)
         cadence_buffer = cadence.to(u.day).value
         get_oot_duration_fraction = 0
-        phased = (self.times.jd[mask] - params.t0) % params.per
-        near_transit = ((phased < params.duration*(0.5 + get_oot_duration_fraction) + cadence_buffer) |
-                        (phased > params.per - params.duration*(0.5 + get_oot_duration_fraction) - cadence_buffer))
+        phased = (self.times.jd - params.t0) % params.per
+        near_transit = ((phased < params.duration *
+                         (0.5 + get_oot_duration_fraction) + cadence_buffer) |
+                        (phased > params.per - params.duration *
+                         (0.5 + get_oot_duration_fraction) - cadence_buffer))
 
-        # Remove polynomial baseline trend after subtracting the times by its
-        # mean -- this improves numerical stability for polyfit
-        downscaled_times = self.times.jd - self.times.jd.mean()
-        polynomial_baseline = np.polyfit(downscaled_times[mask][-near_transit],
-                                         self.fluxes[mask][-near_transit], order)
-        polynomial_baseline_fit = np.polyval(polynomial_baseline, downscaled_times)
+        # Remove baseline trend
+        poly_baseline = np.polyfit(self.times.jd[-near_transit],
+                                     self.fluxes[-near_transit], order)
+        poly_baseline_fit = np.polyval(poly_baseline, self.times.jd)
 
         if plots:
             fig, ax = plt.subplots(1, 2, figsize=(15,6))
             ax[0].axhline(1, ls='--', color='k')
-            ax[0].plot(self.times.jd, polynomial_baseline_fit, 'r')
+            ax[0].plot(self.times.jd, poly_baseline_fit, 'r')
             ax[0].plot(self.times.jd, self.fluxes, 'bo')
-            if mask is not None:
-                ax[0].plot(self.times.jd[~mask], self.fluxes[~mask], 'ro')
             plt.show()
 
-        return polynomial_baseline_fit
+        if return_near_transit:
+            return poly_baseline, near_transit
+        else:
+            return poly_baseline
 
     def subtract_polynomial_baseline(self, plots=False, order=2,
-                                     cadence=1*u.min):
+                                     cadence=30*u.min):
         """
         Find OOT portions of transit light curve using similar method to
         `LightCurve.mask_out_of_transit`, fit polynomial baseline to OOT,
@@ -636,8 +680,7 @@ class TransitLightCurve(LightCurve):
         """
         params = self.params
         polynomial_baseline_fit = self.fit_polynomial_baseline(cadence=cadence,
-                                                               order=order,
-                                                               params=params)
+                                                               order=order)
         self.fluxes = self.fluxes - polynomial_baseline_fit
         self.errors = self.errors
 
@@ -655,14 +698,13 @@ class TransitLightCurve(LightCurve):
 
 
     def subtract_add_divide_without_outliers(self, quarterly_max,
-                                             order=2, cadence=1*u.min,
+                                             order=2, cadence=30*u.min,
                                              outlier_error_multiplier=50,
                                              outlier_tolerance_depth_factor=0.20,
                                              plots=False):
         params = self.params
         init_baseline_fit = self.fit_polynomial_baseline(order=order,
-                                                         cadence=cadence,
-                                                         params=params)
+                                                         cadence=cadence)
 
         # Subtract out a transit model
         transit_model = generate_lc_depth(self.times_jd, params.rp**2, params)
@@ -675,7 +717,6 @@ class TransitLightCurve(LightCurve):
 
         final_baseline_fit = self.fit_polynomial_baseline(order=order,
                                                           cadence=cadence,
-                                                          params=params,
                                                           mask=~lower_outliers)
 
         self.fluxes = self.fluxes - final_baseline_fit
