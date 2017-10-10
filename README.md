@@ -33,3 +33,4 @@ Open up the notebook `show_lc.ipynb` to see what the package can do.
 * astropy
 * batman
 * kplr
+* astroquery

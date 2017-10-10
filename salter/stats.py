@@ -10,16 +10,19 @@ __all__ = ['Residuals']
 
 
 class Residuals(object):
-    def __init__(self, transits, params):
+    def __init__(self, transits, params, buffer_duration=0.15):
         """
         Residuals container object
 
         Parameters
         ----------
-        transits : list
+        transits : list of `~salter.TransitLightCurve` objects
+            list of transits
         params : `~batman.TransitParams()`
+            transiting planet parameters
+        buffer_duration : float
+            fraction of transit duration
         """
-
         all_transits = concatenate_transit_light_curves(transits)
 
         self.residuals = all_transits.fluxes - all_transits.transit_model()
@@ -29,10 +32,14 @@ class Residuals(object):
 
         mask_nans = np.isnan(self.residuals)
 
-        out_of_transit = (((-self.egress_phase > all_transits.phases()) |
-                           (self.egress_phase < all_transits.phases())) &
+        buffer = buffer_duration * params.duration / params.per
+
+        out_of_transit = (((-self.egress_phase - buffer/2 > all_transits.phases()) |
+                           (self.egress_phase + buffer/2 < all_transits.phases())) &
                           np.logical_not(mask_nans))
-        in_transit = np.logical_not(out_of_transit) & np.logical_not(mask_nans)
+        in_transit = (((-self.egress_phase + buffer/2 < all_transits.phases()) &
+                           (self.egress_phase - buffer/2 > all_transits.phases())) &
+                          np.logical_not(mask_nans))
 
         self.out_of_transit = out_of_transit
         self.in_transit = in_transit
@@ -102,4 +109,7 @@ class Residuals(object):
         """
         sample1, sample2 = self._and_reduce(attrs1, attrs2)
 
-        return anderson_ksamp([sample1, sample2]).significance_level
+        try:
+            return anderson_ksamp([sample1, sample2]).significance_level
+        except OverflowError:
+            return 0

@@ -26,7 +26,7 @@ def kic_to_params(kic):
 
     params = batman.TransitParams()       # object to store transit parameters
     params.limb_dark = "quadratic"        #limb darkening model
-    params.u = quad(table.loc[kic]['koi_steff'], 4.5, 'KP') #[0.2, 0.1]      #limb darkening coefficients
+    params.u = quad(table.loc[kic]['TEFF'], 4.5, 'KP')  # limb darkening coefficients
 
     params.t0 = table.loc[kic]['koi_time0bk'] + 2454833.0  # time of inferior conjunction
     params.per = table.loc[kic]['koi_period']                       # orbital period
