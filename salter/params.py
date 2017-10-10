@@ -3,10 +3,12 @@ from __future__ import (absolute_import, division, print_function,
 
 import batman
 
-__all__ = ['kic_to_params']
+from .cache import planet_props
+
+__all__ = ['kic_to_params', 'transit_model']
 
 
-def kic_to_params(table, kic):
+def kic_to_params(kic):
     """
     Parameters
     ----------
@@ -15,10 +17,10 @@ def kic_to_params(table, kic):
 
     Examples
     --------
-    >>> from salter import get_planets_table, kic_to_params
-    >>> table = get_planets_table()
-    >>> params = kic_to_params(table, 9705459)
+    >>> from salter import kic_to_params
+    >>> params = kic_to_params(9705459)
     """
+    table = planet_props.table
     params = batman.TransitParams()       #object to store transit parameters
     params.t0 = table.loc[kic]['koi_time0bk'] + 2454833.0                        #time of inferior conjunction
     params.per = table.loc[kic]['koi_period']                       #orbital period
@@ -32,3 +34,16 @@ def kic_to_params(table, kic):
     return params
 
 
+def transit_model(kic, times):
+    """
+    Parameters
+    ----------
+    table :
+    kic :
+    times :
+    """
+    table = planet_props.table
+    params = kic_to_params(kic)
+    m = batman.TransitModel(params, times)    #initializes model
+    flux = m.light_curve(params)                    #calculates light curve
+    return flux

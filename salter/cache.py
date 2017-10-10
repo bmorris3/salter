@@ -12,7 +12,9 @@ from astropy.utils.data import download_file
 from astropy.table import join
 from astropy.table import Column
 
-__all__ = ['cache_light_curves', 'get_planets_table', 'cache_joined_table']
+__all__ = ['cache_light_curves', 'get_planets_table', 'cache_joined_table',
+           'planet_props']
+
 
 kic_numbers_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 os.path.pardir, 'data', 'kics.csv')
@@ -102,3 +104,19 @@ def get_planets_table():
     table = table[first_kois_only]
     table.add_index('kepid')
     return table
+
+
+class PlanetProperties(object):
+    """
+    Cache manager for planet properties table
+    """
+    def __init__(self):
+        self._table = None
+
+    @property
+    def table(self):
+        if self._table is None:
+            self._table = get_planets_table()
+        return self._table
+
+planet_props = PlanetProperties()
