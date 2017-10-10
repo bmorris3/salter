@@ -24,7 +24,7 @@ HDF5_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 os.path.pardir, 'data', 'light_curves.hdf5')
 
 
-def generate_lc_depth(times, depth, transit_params):
+def generate_lc_depth(times, depth, transit_params, exp_time=30/60/24):
     """
     Generate a model transit light curve.
 
@@ -41,7 +41,7 @@ def generate_lc_depth(times, depth, transit_params):
     -------
 
     """
-    exp_time = (1*u.min).to(u.day).value
+    #exp_time = (30*u.min).to(u.day).value
 
     transit_params.rp = np.sqrt(depth)
 
@@ -89,19 +89,22 @@ class LightCurve(object):
         if self.times is not None and quarters is None:
             quarters = np.zeros_like(self.fluxes) - 1
         self.quarters = quarters
-        self.name = name
+        self.name = name if type(name) is str else str(name)
         self.params = params
 
     @classmethod
     def from_hdf5(cls, hdf5_file, kic):
         mask_nans = np.logical_not(np.isnan(hdf5_file[str(kic)][:, 0]))
 
+        name = str(kic)
+
         params = kic_to_params(kic)
 
         return cls(times=hdf5_file[str(kic)][:, 0][mask_nans] + 2454833.0,
                    fluxes=hdf5_file[str(kic)][:, 1][mask_nans],
                    errors=hdf5_file[str(kic)][:, 2][mask_nans],
-                   name=kic, params=params)
+                   quarters=hdf5_file[str(kic)][:, 4][mask_nans],
+                   name=name, params=params)
 
     def phases(self):
         params = self.params
@@ -504,7 +507,7 @@ class TransitLightCurve(LightCurve):
         if self.times is not None and quarters is None:
             quarters = np.zeros_like(self.fluxes) - 1
         self.quarters = quarters
-        self.name = name
+        self.name = name if type(name) is str else str(name)
         self.rescaled = False
         self.params = params
 
@@ -626,50 +629,37 @@ class TransitLightCurve(LightCurve):
             self.rescaled = True
 
     def fit_polynomial_baseline(self, order=2, cadence=30*u.min,
-                                plots=False, return_near_transit=False):
+                                plots=False, mask=None):
         """
         Find OOT portions of transit light curve using similar method to
-        `LightCurve.mask_out_of_transit`, fit linear baseline to OOT.
-
-        Parameters
-        ----------
-        cadence : `~astropy.units.Quantity` (optional)
-            Length of the exposure time for each flux. Default is 30 min.
-        return_near_transit : bool (optional)
-            Return the mask for times in-transit.
-
-        Returns
-        -------
-        polynomial_baseline : `numpy.ndarray`
-            Baseline trend of out-of-transit fluxes
-        near_transit : `numpy.ndarray` (optional)
-            The mask for times in-transit.
+        `LightCurve.mask_out_of_transit`, fit linear baseline to OOT
         """
         params = self.params
+        if mask is None:
+            mask = np.ones(len(self.fluxes)).astype(bool)
         cadence_buffer = cadence.to(u.day).value
         get_oot_duration_fraction = 0
-        phased = (self.times.jd - params.t0) % params.per
-        near_transit = ((phased < params.duration *
-                         (0.5 + get_oot_duration_fraction) + cadence_buffer) |
-                        (phased > params.per - params.duration *
-                         (0.5 + get_oot_duration_fraction) - cadence_buffer))
+        phased = (self.times.jd[mask] - params.t0) % params.per
+        near_transit = ((phased < params.duration*(0.5 + get_oot_duration_fraction) + cadence_buffer) |
+                        (phased > params.per - params.duration*(0.5 + get_oot_duration_fraction) - cadence_buffer))
 
-        # Remove baseline trend
-        poly_baseline = np.polyfit(self.times.jd[-near_transit],
-                                     self.fluxes[-near_transit], order)
-        poly_baseline_fit = np.polyval(poly_baseline, self.times.jd)
+        # Remove polynomial baseline trend after subtracting the times by its
+        # mean -- this improves numerical stability for polyfit
+        downscaled_times = self.times.jd - self.times.jd.mean()
+        polynomial_baseline = np.polyfit(downscaled_times[mask][-near_transit],
+                                         self.fluxes[mask][-near_transit], order)
+        polynomial_baseline_fit = np.polyval(polynomial_baseline, downscaled_times)
 
         if plots:
             fig, ax = plt.subplots(1, 2, figsize=(15,6))
             ax[0].axhline(1, ls='--', color='k')
-            ax[0].plot(self.times.jd, poly_baseline_fit, 'r')
+            ax[0].plot(self.times.jd, polynomial_baseline_fit, 'r')
             ax[0].plot(self.times.jd, self.fluxes, 'bo')
+            if mask is not None:
+                ax[0].plot(self.times.jd[~mask], self.fluxes[~mask], 'ro')
             plt.show()
 
-        if return_near_transit:
-            return poly_baseline, near_transit
-        else:
-            return poly_baseline
+        return polynomial_baseline_fit
 
     def subtract_polynomial_baseline(self, plots=False, order=2,
                                      cadence=30*u.min):
@@ -702,16 +692,16 @@ class TransitLightCurve(LightCurve):
                                              outlier_error_multiplier=50,
                                              outlier_tolerance_depth_factor=0.20,
                                              plots=False):
-        params = self.params
+
         init_baseline_fit = self.fit_polynomial_baseline(order=order,
                                                          cadence=cadence)
 
         # Subtract out a transit model
-        transit_model = generate_lc_depth(self.times_jd, params.rp**2, params)
+        transit_model = generate_lc_depth(self.times_jd, self.params.rp**2, self.params)
 
         lower_outliers = (transit_model*init_baseline_fit - self.fluxes >
                           self.fluxes.mean() * outlier_tolerance_depth_factor *
-                          params.rp**2)
+                          self.params.rp**2)
 
         self.errors[lower_outliers] *= outlier_error_multiplier
 

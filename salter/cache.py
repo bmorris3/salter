@@ -52,7 +52,6 @@ def cache_light_curves():
 
                 # Loop over the datasets and read in the data.
                 time, flux, ferr, quality, quarter = [], [], [], [], []
-                n_columns = 5
 
                 for i, lc in enumerate(lightcurves):
                     with lc.open() as lc_file:
@@ -69,6 +68,7 @@ def cache_light_curves():
                 f.create_dataset(str(kic), data=data)
                 f.flush()
                 bar.update()
+    f.close()
 
 
 def cache_joined_table():
