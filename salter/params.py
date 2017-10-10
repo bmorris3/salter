@@ -5,21 +5,9 @@ import batman
 import numpy as np
 
 from .cache import planet_props
+from .limbdarkening import quad
 
 __all__ = ['kic_to_params', 'transit_model']
-
-
-def handle_w(w):
-    if type(w) is np.ma.core.MaskedConstant:
-        return 90.0
-    else:
-        return w
-
-def handle_a(a):
-    if type(a) is np.ma.core.MaskedConstant:
-        return 90.0
-    else:
-        return a
 
 
 def kic_to_params(kic):
@@ -52,7 +40,7 @@ def kic_to_params(kic):
     params.inc = inc
 
     params.limb_dark = "quadratic"        #limb darkening model
-    params.u = [0.2, 0.1]      #limb darkening coefficients
+    params.u = quad(table.loc[kic]['koi_steff'], 4.5, 'KP') #[0.2, 0.1]      #limb darkening coefficients
     return params
 
 

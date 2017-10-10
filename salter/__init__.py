@@ -4,3 +4,4 @@ from __future__ import (absolute_import, division, print_function,
 from .lightcurve import *
 from .cache import *
 from .params import *
+from .limbdarkening import *
