@@ -5,3 +5,4 @@ from .lightcurve import *
 from .cache import *
 from .params import *
 from .limbdarkening import *
+from .stats import *

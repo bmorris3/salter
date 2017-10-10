@@ -103,6 +103,7 @@ def get_planets_table():
     table = table[first_kois_only]
     table.add_index('kepid')
 
+    # Ensure only unique results
     unique_table = unique(table, keys='kepid')
     unique_table.add_index('kepid')
 
