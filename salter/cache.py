@@ -26,12 +26,17 @@ light_curves_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 def cache_light_curves():
     """
-    Run:
+    Run this after running `choose_targets.ipynb`.
+
     python -c "from salter import cache_light_curves; cache_light_curves()"
     """
     if os.path.exists(light_curves_path):
         raise ValueError('Light curves file already exists, at {0}'
                          .format(light_curves_path))
+
+    if not os.path.exists(kic_numbers_path):
+        raise ValueError("You must first run the `choose_targets.ipynb` "
+                         "notebook before running `cache_light_curves`")
 
     kics = ascii.read(kic_numbers_path, format='no_header')['col1']
 
