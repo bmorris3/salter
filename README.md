@@ -20,3 +20,12 @@ Run this to cache a local copy of the joined tables from the NASA Exoplanet Arch
 ```
 python -c "from salter.cache import cache_joined_table; cache_joined_table()"
 ```
+
+## Dependencies
+
+* numpy 
+* matplotlib
+* h5py, hdf5
+* astropy
+* batman
+* kplr

@@ -18,16 +18,27 @@ kic_numbers_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 os.path.pardir, 'data', 'kics.csv')
 
 joined_table_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                os.path.pardir, 'data', 'joined_table.csv')
+                                 os.path.pardir, 'data', 'joined_table.csv')
+
+light_curves_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 os.path.pardir, 'data', 'light_curves.hdf5')
 
 
 def cache_light_curves():
+    """
+    Run:
+    python -c "from salter import cache_light_curves; cache_light_curves()"
+    """
+    if os.path.exists(light_curves_path):
+        raise ValueError('Light curves file already exists, at {0}'
+                         .format(light_curves_path))
+
     kics = ascii.read(kic_numbers_path, format='no_header')['col1']
 
     client = kplr.API()
 
     # Create archive
-    f = h5py.File('data/light_curves.hdf5', 'w')
+    f = h5py.File(light_curves_path, 'w')
 
     with ProgressBar(len(kics)) as bar:
         for kic in kics:
@@ -83,4 +94,11 @@ def get_joined_table():
     if not os.path.exists(joined_table_path):
         raise ValueError("You must run salter.cache.cache_joined_table first "
                          "before you can run get_joined_table")
-    return ascii.read(joined_table_path, format='csv')
+    table = ascii.read(joined_table_path, format='csv')
+
+    # Toss out multis
+    first_kois_only = np.array([koi.endswith('01')
+                                for koi in table['kepoi_name']])
+    table = table[first_kois_only]
+    table.add_index('kepid')
+    return table
