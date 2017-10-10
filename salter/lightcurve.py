@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import shutil
 import batman
 
+from .params import kic_to_params
+
 __all__ = ['LightCurve', 'concatenate_transit_light_curves',
            'TransitLightCurve', 'concatenate_light_curves']
 
@@ -54,7 +56,7 @@ class LightCurve(object):
     Container object for light curves.
     """
     def __init__(self, times=None, fluxes=None, errors=None, quarters=None,
-                 name=None):
+                 name=None, params=None):
         """
         Parameters
         ----------
@@ -68,6 +70,8 @@ class LightCurve(object):
             Kepler Quarter for each flux
         name : str
             Name this light curve (optional)
+        params : `~batman.TransitParams`
+            Planet transit parameters
         """
         # if len(times) < 1:
         #    raise ValueError("Input `times` have no length.")
@@ -86,14 +90,18 @@ class LightCurve(object):
             quarters = np.zeros_like(self.fluxes) - 1
         self.quarters = quarters
         self.name = name
+        self.params = params
 
     @classmethod
     def from_hdf5(cls, hdf5_file, kic):
         mask_nans = np.logical_not(np.isnan(hdf5_file[str(kic)][:, 0]))
+
+        params = kic_to_params(kic)
+
         return cls(times=hdf5_file[str(kic)][:, 0][mask_nans] + 2454833.0,
                    fluxes=hdf5_file[str(kic)][:, 1][mask_nans],
                    errors=hdf5_file[str(kic)][:, 2][mask_nans],
-                   name=kic)
+                   name=kic, params=params)
 
     def phases(self, params):
         phase = ((self.times.jd - params.t0) % params.per)/params.per
@@ -290,16 +298,13 @@ class LightCurve(object):
         self.errors = np.delete(self.errors, outliers)
         self.quarters = np.delete(self.quarters, outliers)
 
-    def mask_out_of_transit(self, params, oot_duration_fraction=0.25,
+    def mask_out_of_transit(self, oot_duration_fraction=0.25,
                             flip=False):
         """
         Mask out the out-of-transit light curve based on transit parameters
 
         Parameters
         ----------
-        params : `~batman.TransitParams`
-            Transit light curve parameters. Requires that `params.duration`
-            is defined.
         oot_duration_fraction : float (optional)
             Fluxes from what fraction of a transit duration of the
             out-of-transit light curve should be included in the mask?
@@ -312,7 +317,7 @@ class LightCurve(object):
             Inputs for a new `LightCurve` object with the mask applied.
         """
         # Fraction of one duration to capture out of transit
-
+        params = self.params
         phased = (self.times.jd - params.t0) % params.per
         near_transit = ((phased < params.duration*(0.5 + oot_duration_fraction)) |
                         (phased > params.per - params.duration*(0.5 + oot_duration_fraction)))
@@ -322,17 +327,15 @@ class LightCurve(object):
         return dict(times=self.times[near_transit][sort_by_time],
                     fluxes=self.fluxes[near_transit][sort_by_time],
                     errors=self.errors[near_transit][sort_by_time],
-                    quarters=self.quarters[near_transit][sort_by_time])
+                    quarters=self.quarters[near_transit][sort_by_time],
+                    params=self.params)
 
-    def mask_in_transit(self, params, oot_duration_fraction=0.25):
+    def mask_in_transit(self, oot_duration_fraction=0.25):
         """
         Mask out the in-transit light curve based on transit parameters
 
         Parameters
         ----------
-        params : `~batman.TransitParams`
-            Transit light curve parameters. Requires that `params.duration`
-            is defined.
         oot_duration_fraction : float (optional)
             Fluxes from what fraction of a transit duration of the
             out-of-transit light curve should be included in the mask?
@@ -342,10 +345,11 @@ class LightCurve(object):
         d : dict
             Inputs for a new `LightCurve` object with the mask applied.
         """
+        params = self.params
         return self.mask_out_of_transit(params, flip=True,
                                         oot_duration_fraction=oot_duration_fraction)
 
-    def get_transit_light_curves(self, params, plots=False):
+    def get_transit_light_curves(self, plots=False):
         """
         For a light curve with transits only (i.e. like one returned by
         `LightCurve.mask_out_of_transit`), split up the transits into their
@@ -353,9 +357,6 @@ class LightCurve(object):
 
         Parameters
         ----------
-        params : `~batman.TransitParams`
-            Transit light curve parameters
-
         plots : bool
             Make diagnostic plots.
 
@@ -364,6 +365,7 @@ class LightCurve(object):
         transit_light_curves : list
             List of `TransitLightCurve` objects
         """
+        params = self.params
         time_diffs = np.diff(sorted(self.times.jd))
         diff_between_transits = params.per/2.
         split_inds = np.argwhere(time_diffs > diff_between_transits) + 1
@@ -387,7 +389,8 @@ class LightCurve(object):
                                   fluxes=self.fluxes[start_ind:end_ind],
                                   errors=self.errors[start_ind:end_ind],
                                   quarters=self.quarters[start_ind:end_ind],
-                                  name=counter)
+                                  name=counter,
+                                  params=self.params)
                 transit_light_curves.append(TransitLightCurve(**parameters))
             if plots:
                 plt.show()
@@ -452,7 +455,8 @@ class LightCurve(object):
                            errors=self.errors[index:], quarters=self.quarters[index:],
                            name=self.name))
 
-    def transit_model(self, transit_params, short_cadence=True):
+    def transit_model(self, short_cadence=True):
+        transit_params = self.params
         # (1 * u.min).to(u.day).value
         if short_cadence:
             exp_time = (1 * u.min).to(u.day).value #(6.019802903 * 10 * u.s).to(u.day).value
@@ -473,7 +477,7 @@ class TransitLightCurve(LightCurve):
     Container for a single transit light curve. Subclass of `LightCurve`.
     """
     def __init__(self, times=None, fluxes=None, errors=None, quarters=None,
-                 name=None):
+                 name=None, params=None):
         """
         Parameters
         ----------
@@ -501,8 +505,9 @@ class TransitLightCurve(LightCurve):
         self.quarters = quarters
         self.name = name
         self.rescaled = False
+        self.params = params
 
-    def fit_linear_baseline(self, params, cadence=1*u.min,
+    def fit_linear_baseline(self, cadence=1*u.min,
                             return_near_transit=False, plots=False):
         """
         Find OOT portions of transit light curve using similar method to
@@ -510,9 +515,6 @@ class TransitLightCurve(LightCurve):
 
         Parameters
         ----------
-        params : `~batman.TransitParams`
-            Transit light curve parameters. Requires that `params.duration`
-            is defined.
         cadence : `~astropy.units.Quantity` (optional)
             Length of the exposure time for each flux. Default is 1 min.
         return_near_transit : bool (optional)
@@ -525,6 +527,7 @@ class TransitLightCurve(LightCurve):
         near_transit : `numpy.ndarray` (optional)
             The mask for times in-transit.
         """
+        params = self.params
         cadence_buffer = cadence.to(u.day).value
         get_oot_duration_fraction = 0
         phased = (self.times.jd - params.t0) % params.per
@@ -551,7 +554,7 @@ class TransitLightCurve(LightCurve):
         else:
             return linear_baseline
 
-    def remove_linear_baseline(self, params, plots=False, cadence=1*u.min):
+    def remove_linear_baseline(self, plots=False, cadence=1*u.min):
         """
         Find OOT portions of transit light curve using similar method to
         `LightCurve.mask_out_of_transit`, fit linear baseline to OOT,
@@ -559,17 +562,13 @@ class TransitLightCurve(LightCurve):
 
         Parameters
         ----------
-        params : `~batman.TransitParams`
-            Transit light curve parameters. Requires that `params.duration`
-            is defined.
         cadence : `~astropy.units.Quantity` (optional)
             Length of the exposure time for each flux. Default is 1 min.
         plots : bool (optional)
             Show diagnostic plots.
         """
-
-        linear_baseline, near_transit = self.fit_linear_baseline(params,
-                                                                 cadence=cadence,
+        params = self.params
+        linear_baseline, near_transit = self.fit_linear_baseline(cadence=cadence,
                                                                  return_near_transit=True)
         linear_baseline_fit = np.polyval(linear_baseline, self.times.jd)
         self.fluxes =  self.fluxes/linear_baseline_fit
@@ -594,12 +593,13 @@ class TransitLightCurve(LightCurve):
             self.rescaled = True
 
 
-    def fit_polynomial_baseline(self, params, order=2, cadence=1*u.min,
+    def fit_polynomial_baseline(self, order=2, cadence=1*u.min,
                                 plots=False, mask=None):
         """
         Find OOT portions of transit light curve using similar method to
         `LightCurve.mask_out_of_transit`, fit linear baseline to OOT
         """
+        params = self.params
         if mask is None:
             mask = np.ones(len(self.fluxes)).astype(bool)
         cadence_buffer = cadence.to(u.day).value
@@ -626,14 +626,14 @@ class TransitLightCurve(LightCurve):
 
         return polynomial_baseline_fit
 
-    def subtract_polynomial_baseline(self, params, plots=False, order=2,
+    def subtract_polynomial_baseline(self, plots=False, order=2,
                                      cadence=1*u.min):
         """
         Find OOT portions of transit light curve using similar method to
         `LightCurve.mask_out_of_transit`, fit polynomial baseline to OOT,
         subtract whole light curve by that fit.
         """
-
+        params = self.params
         polynomial_baseline_fit = self.fit_polynomial_baseline(cadence=cadence,
                                                                order=order,
                                                                params=params)
@@ -653,12 +653,12 @@ class TransitLightCurve(LightCurve):
             plt.show()
 
 
-    def subtract_add_divide_without_outliers(self, params, quarterly_max,
+    def subtract_add_divide_without_outliers(self, quarterly_max,
                                              order=2, cadence=1*u.min,
                                              outlier_error_multiplier=50,
                                              outlier_tolerance_depth_factor=0.20,
                                              plots=False):
-
+        params = self.params
         init_baseline_fit = self.fit_polynomial_baseline(order=order,
                                                          cadence=cadence,
                                                          params=params)
@@ -732,7 +732,8 @@ def concatenate_transit_light_curves(light_curve_list, name=None):
 
     times = Time(times, format='jd')
     return TransitLightCurve(times=times, fluxes=fluxes, errors=errors,
-                             quarters=quarters, name=name)
+                             quarters=quarters, name=name, params=light_curve.params)
+
 
 def concatenate_light_curves(light_curve_list, name=None):
     """
@@ -765,4 +766,4 @@ def concatenate_light_curves(light_curve_list, name=None):
 
     times = Time(times, format='jd')
     return LightCurve(times=times, fluxes=fluxes, errors=errors,
-                      quarters=quarters, name=name)
+                      quarters=quarters, name=name, params=light_curve.params[0])

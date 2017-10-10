@@ -115,6 +115,12 @@ class PlanetProperties(object):
 
     @property
     def table(self):
+        """
+        Column definitions:
+
+        http://exoplanets.org/help/common/data
+        https://exoplanetarchive.ipac.caltech.edu/docs/API_kepcandidate_columns.html
+        """
         if self._table is None:
             self._table = get_planets_table()
         return self._table
