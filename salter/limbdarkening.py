@@ -172,8 +172,10 @@ def quad(Teff, logg, filt):
         The linear and quadratic limb-darkening terms for a quadratic law:
         I(mu)/I(1) = 1 - a*(1 - mu) - b*(1 - mu)**2
     '''
-    closestmodel = getclosestmodel(Teff, logg, filt)
-
+    if type(Teff) is int:
+        closestmodel = getclosestmodel(round(Teff, -2), logg, filt)
+    else:
+        closestmodel = getclosestmodel(5800, logg, filt)
     # If two grid points are equally close, take the mean of the ld-parameters
     # if type(closestmodel) is np.ndarray:
     #     return np.mean(ld_table.table['a'][closestmodel]), np.mean(ld_table.table['b'][closestmodel])

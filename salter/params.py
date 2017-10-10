@@ -23,12 +23,20 @@ def kic_to_params(kic):
     >>> params = kic_to_params(9705459)
     """
     table = planet_props.table
+
     params = batman.TransitParams()       # object to store transit parameters
+    params.limb_dark = "quadratic"        #limb darkening model
+    params.u = quad(table.loc[kic]['koi_steff'], 4.5, 'KP') #[0.2, 0.1]      #limb darkening coefficients
+
     params.t0 = table.loc[kic]['koi_time0bk'] + 2454833.0  # time of inferior conjunction
     params.per = table.loc[kic]['koi_period']                       # orbital period
-    params.rp = np.sqrt(table.loc[kic]['koi_depth'] / 1e6)          # planet radius (in units of stellar radii)
-    params.ecc = 0 #table.loc[kic]['koi_eccen']
-    params.w = 90 #table.loc[kic]['koi_longp']
+
+    constant = 1/(1 - params.u[0]/3 - params.u[1]/6)
+
+    params.rp = np.sqrt(table.loc[kic]['koi_depth'] / 1e6 / constant)          # planet radius (in units of stellar radii)
+
+    params.ecc = 0 # table.loc[kic]['koi_eccen']
+    params.w = 90 # table.loc[kic]['koi_longp']
 
     params.duration = table.loc[kic]['koi_duration'] / 24.0  # [days]
     params.b = table.loc[kic]['koi_impact']  # impact parameter
@@ -39,8 +47,7 @@ def kic_to_params(kic):
     params.a = a_rs
     params.inc = inc
 
-    params.limb_dark = "quadratic"        #limb darkening model
-    params.u = quad(table.loc[kic]['koi_steff'], 4.5, 'KP') #[0.2, 0.1]      #limb darkening coefficients
+
     return params
 
 

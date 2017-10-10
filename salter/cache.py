@@ -8,8 +8,7 @@ import os
 import h5py
 from astropy.utils.console import ProgressBar
 from astropy.utils.data import download_file
-from astropy.table import join
-from astropy.table import Column
+from astropy.table import Column, unique, join
 
 __all__ = ['cache_light_curves', 'get_planets_table', 'cache_joined_table',
            'planet_props']
@@ -103,7 +102,11 @@ def get_planets_table():
                                 for koi in table['kepoi_name']])
     table = table[first_kois_only]
     table.add_index('kepid')
-    return table
+
+    unique_table = unique(table, keys='kepid')
+    unique_table.add_index('kepid')
+
+    return unique_table
 
 
 class PlanetProperties(object):

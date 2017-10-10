@@ -14,11 +14,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import shutil
 import batman
+from scipy.ndimage import gaussian_filter
 
 from .params import kic_to_params
 
 __all__ = ['LightCurve', 'concatenate_transit_light_curves',
-           'TransitLightCurve', 'concatenate_light_curves']
+           'TransitLightCurve', 'concatenate_light_curves',
+           'subtract_add_divide']
 
 HDF5_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 os.path.pardir, 'data', 'light_curves.hdf5')
@@ -799,3 +801,21 @@ def concatenate_light_curves(light_curve_list, name=None):
     times = Time(times, format='jd')
     return LightCurve(times=times, fluxes=fluxes, errors=errors,
                       quarters=quarters, name=name, params=light_curve.params[0])
+
+
+def subtract_add_divide(whole_lc, transits):
+    # Compute maxes for each quarter
+    available_quarters = whole_lc.get_available_quarters()
+    quarters = [whole_lc.get_quarter(q) for q in whole_lc.get_available_quarters()]
+
+    quarterly_maxes = {}
+    set_upper_limit = 4e10
+    for i, quarter_number, lc in zip(range(len(available_quarters)),
+                                     available_quarters, quarters):
+        fluxes = lc.fluxes[lc.fluxes < set_upper_limit]
+        smoothed_fluxes = gaussian_filter(fluxes, sigma=20)
+        quarterly_maxes[quarter_number] = np.max(smoothed_fluxes)
+
+    for transit in transits:
+        transit.subtract_add_divide_without_outliers(quarterly_max=quarterly_maxes[lc.quarters[0]],
+                                                     plots=False)
