@@ -26,9 +26,12 @@ light_curves_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 def cache_light_curves():
     """
-    Run this after running `choose_targets.ipynb`.
+    Run this after running `choose_targets.ipynb` in order to cache light curves
+    into a local HDF5 archive.
 
-    python -c "from salter import cache_light_curves; cache_light_curves()"
+    Examples
+    --------
+    >>> from salter import cache_light_curves; cache_light_curves()
     """
     if os.path.exists(light_curves_path):
         raise ValueError('Light curves file already exists, at {0}'
@@ -80,7 +83,7 @@ def cache_planets_table():
     Cache a joined table containing data from the NASA Exoplanet Archive and
     the Exoplanet Orbit Database.
 
-    To get the table, run the ``get_joined_table()`` function
+    To get the table, run the `~salter.get_planets_table()` function.
     """
     NEA_URL = 'https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=cumulative'
     EOD_URL = 'http://exoplanets.org/csv-files/exoplanets.csv'
@@ -97,6 +100,15 @@ def cache_planets_table():
 
 
 def get_planets_table():
+    """
+    Get the joined planets table from the NASA Exoplanet Archive and
+    the Exoplanet Orbit Database.
+
+    Returns
+    -------
+    table : `~astropy.table.Table`
+        Table of exoplanet properties
+    """
     if not os.path.exists(planet_table_path):
         raise ValueError("You must run salter.cache.cache_planets_table first "
                          "before you can run get_joined_table")
@@ -117,7 +129,7 @@ def get_planets_table():
 
 class PlanetProperties(object):
     """
-    Cache manager for planet properties table
+    Cache manager for planet properties table.
     """
     def __init__(self):
         self._table = None
@@ -125,10 +137,12 @@ class PlanetProperties(object):
     @property
     def table(self):
         """
-        Column definitions:
+        Column definitions can be found at [1]_ and [2]_.
 
-        http://exoplanets.org/help/common/data
-        https://exoplanetarchive.ipac.caltech.edu/docs/API_kepcandidate_columns.html
+        References
+        ----------
+        .. [1] http://exoplanets.org/help/common/data
+        .. [2] https://exoplanetarchive.ipac.caltech.edu/docs/API_kepcandidate_columns.html
         """
         if self._table is None:
             self._table = get_planets_table()

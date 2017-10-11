@@ -9,6 +9,9 @@ __all__ = ['quad', 'ld_table']
 
 
 class LDTable(object):
+    """
+    Limb darkening table object.
+    """
     def __init__(self):
         self._table = None
 
@@ -23,7 +26,7 @@ class LDTable(object):
 ld_table = LDTable()
 
 
-def get_closest_model(Teff, logg, filt):
+def _get_closest_model(Teff, logg, filt):
     '''
     All grid points have metallicities Z=0 (solar), microturbulence xi=2
 
@@ -72,8 +75,8 @@ def quad(Teff, logg, filt):
         I(mu)/I(1) = 1 - a*(1 - mu) - b*(1 - mu)**2
     """
     if type(Teff) is int or type(Teff) is float:
-        closestmodel = get_closest_model(round(Teff, -2), logg, filt)
+        closestmodel = _get_closest_model(round(Teff, -2), logg, filt)
     else:
-        closestmodel = get_closest_model(5800, logg, filt)
+        closestmodel = _get_closest_model(5800, logg, filt)
 
     return ld_table.table['a'][closestmodel], ld_table.table['b'][closestmodel]

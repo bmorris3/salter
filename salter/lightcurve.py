@@ -6,13 +6,11 @@ curves.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from astropy.io import fits
 from astropy.time import Time
 import astropy.units as u
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import shutil
 import batman
 from scipy.ndimage import gaussian_filter
 
@@ -96,6 +94,16 @@ class LightCurve(object):
 
     @classmethod
     def from_hdf5(cls, hdf5_file, kic):
+        """
+        Load a light curve from ``hdf5_file`` with KIC number ``kic``
+
+        Parameters
+        ----------
+        hdf5_file : `~h5py.File`
+            HDF5 light curve archive file stream
+        kic: float
+            KIC number
+        """
         mask_nans = np.logical_not(np.isnan(hdf5_file[str(kic)][:, 0]))
 
         name = str(kic)
@@ -161,101 +169,6 @@ class LightCurve(object):
 
         if show:
             plt.show()
-
-    def save_to(self, path, overwrite=False, for_stsp=False):
-        """
-        Save times, fluxes, errors to new directory ``dirname`` in ``path``
-        """
-        dirname = self.name
-        output_path = os.path.join(path, dirname)
-        self.times = Time(self.times)
-
-        if not for_stsp:
-            if os.path.exists(output_path) and overwrite:
-                shutil.rmtree(output_path)
-
-            if not os.path.exists(output_path):
-                os.mkdir(output_path)
-                for attr in ['times_jd', 'fluxes', 'errors', 'quarters']:
-                    np.savetxt(os.path.join(path, dirname,
-                                            '{0}.txt'.format(attr)),
-                               getattr(self, attr))
-
-        else:
-            if not os.path.exists(output_path) or overwrite:
-                attrs = ['times_jd', 'fluxes', 'errors']
-                output_array = np.zeros((len(self.fluxes), len(attrs)),
-                                        dtype=float)
-                for i, attr in enumerate(attrs):
-                    output_array[:, i] = getattr(self, attr)
-                np.savetxt(os.path.join(path, dirname+'.txt'), output_array)
-
-    @classmethod
-    def from_raw_fits(cls, fits_paths, name=None):
-        """
-        Load FITS files downloaded from MAST into the `LightCurve` object.
-
-        Parameters
-        ----------
-        fits_paths : list
-            List of paths to FITS files to read in
-        name : str (optional)
-            Name of light curve
-
-        Returns
-        -------
-        lc : `LightCurve`
-            The light curve for the data in the fits files.
-        """
-        fluxes = []
-        errors = []
-        times = []
-        quarter = []
-
-        # Manual on times: http://archive.stsci.edu/kepler/manuals/archive_manual.htm
-
-        for path in fits_paths:
-            data = fits.getdata(path)
-            header = fits.getheader(path)
-            timslice = fits.open(path)[1].header['TIMSLICE']
-            time_slice_correction = (0.25 + 0.62*(5.0 - timslice))/86400
-            times.append(data['TIME'] + 2454833.0)# - data['TIMECORR'] + time_slice_correction)
-            errors.append(data['SAP_FLUX_ERR'])
-            fluxes.append(data['SAP_FLUX'])
-            quarter.append(len(data['TIME'])*[header['QUARTER']])
-
-        times, fluxes, errors, quarter = [np.concatenate(i)
-                                          for i in [times, fluxes,
-                                                    errors, quarter]]
-
-        mask_nans = np.zeros_like(fluxes).astype(bool)
-        for attr in [times, fluxes, errors]:
-            mask_nans |= np.isnan(attr)
-
-        times, fluxes, errors, quarter = [attr[-mask_nans]
-                                           for attr in [times, fluxes, errors, quarter]]
-
-        return LightCurve(times, fluxes, errors, quarters=quarter, name=name)
-
-    @classmethod
-    def from_dir(cls, path, for_stsp=False):
-        """Load light curve from numpy save files in ``dir``"""
-        if not for_stsp:
-            times, fluxes, errors, quarters = [np.loadtxt(os.path.join(path, '{0}.txt'.format(attr)))
-                                               for attr in ['times_jd', 'fluxes', 'errors', 'quarters']]
-        else:
-            quarters = None
-            times, fluxes, errors = np.loadtxt(path, unpack=True)
-
-        if os.sep in path:
-            name = path.split(os.sep)[-1]
-        else:
-            name = path
-
-        if name.endswith('.txt'):
-            name = name[:-4]
-
-        return cls(times, fluxes, errors, quarters=quarters, name=name)
 
     def normalize_each_quarter(self, rename=None, polynomial_order=2,
                                plots=False):

@@ -12,10 +12,18 @@ __all__ = ['kic_to_params', 'transit_model']
 
 def kic_to_params(kic):
     """
+    For a KIC number ``kic``, return a `~batman.TransitParams` object for that
+    star-planet system.
+
     Parameters
     ----------
-    table :
-    kic :
+    kic : int
+        KIC number
+
+    Returns
+    -------
+    params : `~batman.TransitParams`
+        Transit parameter object
 
     Examples
     --------
@@ -53,11 +61,19 @@ def kic_to_params(kic):
 
 def transit_model(kic, times):
     """
+    Compute a transit model for KIC ``kic`` at times ``times``
+
     Parameters
     ----------
-    table :
-    kic :
-    times :
+    kic : int
+        KIC number
+    times : `~astropy.time.Time`
+        Times to compute model
+
+    Returns
+    -------
+    flux : `~numpy.ndarray`
+        Model fluxes at ``tiems``
     """
     table = planet_props.table
     params = kic_to_params(kic)
@@ -69,15 +85,20 @@ def transit_model(kic, times):
 def impact_parameter(transit_params):
     """
     Calculate impact parameter of transit from other transit parameters. From
-    Winn 2010, Eqn 7 [1]_
+    Winn 2010, Eqn 7 [1]_.
+
     Parameters
     ----------
     transit_params : `~batman.TransitParams`
         Transit light curve parameters
+
     Returns
     -------
     b : float
         Impact parameter
+
+    References
+    ----------
     .. [1] http://adsabs.harvard.edu/abs/2010arXiv1001.2010W
     """
     e = transit_params.ecc  # eccentricity
@@ -91,9 +112,28 @@ def impact_parameter(transit_params):
 
 
 def T14b2aRsi(P, T14, b, RpRs, eccentricity, omega):
-    '''
+    """
     Convert from duration and impact param to a/Rs and inclination
-    '''
+
+    Parameters
+    ----------
+    P : float
+        Period [days]
+    T14 : float
+        Duration [days]
+    b : float
+        Impact parameter
+    eccentricity : float
+        Eccentricity
+    omega : float
+        argument of periastron
+
+    Returns
+    aRs : float
+        semimajor axis in units of stellar radii
+    inc : float
+        Orbital inclination in units of degrees
+    """
     beta = (1 - eccentricity**2)/(1 + eccentricity*np.sin(np.radians(omega)))
     C = np.sqrt(1 - eccentricity**2)/(1 + eccentricity*np.sin(np.radians(omega)))
     i = np.arctan(beta * np.sqrt((1 + RpRs)**2 - b**2)/(b*np.sin(T14*np.pi/(P*C))))

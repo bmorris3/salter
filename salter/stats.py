@@ -12,7 +12,7 @@ __all__ = ['Residuals']
 class Residuals(object):
     def __init__(self, transits, params, buffer_duration=0.15):
         """
-        Residuals container object
+        Object for managing transit light curve residuals.
 
         Parameters
         ----------
@@ -21,7 +21,8 @@ class Residuals(object):
         params : `~batman.TransitParams()`
             transiting planet parameters
         buffer_duration : float
-            fraction of transit duration
+            fraction of transit duration to ignore centered on ingress and
+            egress.
         """
         all_transits = concatenate_transit_light_curves(transits)
 
@@ -74,12 +75,48 @@ class Residuals(object):
 
     def ttest(self, attrs1, attrs2):
         """
-        Independent two-sample T test.
+        Independent two-sample T test from `~scipy.stats.ttest_ind`.
 
         Parameters
         ----------
         attrs1 : list of attributes
+            List of conditions in first sample
         attrs2 : list of attributes
+            List of conditions in second sample
+
+        Returns
+        -------
+        pvalue : float
+            p value.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> import batman
+        >>> from salter import LightCurve
+
+        >>> params = batman.TransitParams()
+        >>> params.t0 = 0.5
+        >>> params.rp = 0.1
+        >>> params.per = 1
+        >>> params.duration = 0.3
+        >>> params.inc = 90
+        >>> params.w = 90
+        >>> params.ecc = 0
+        >>> params.a = 10
+        >>> params.limb_dark = 'quadratic'
+        >>> params.u = [0.2, 0.1]
+
+        >>> transits = [LightCurve(times=i + np.linspace(0, 1, 500),
+        >>>                        fluxes=np.random.randn(500),
+        >>>                        params=params) for i in range(10)]
+        >>> r = Residuals(transits, params)
+
+        >>> r.ttest('out_of_transit', 'in_transit')
+        0.310504218041
+
+        >>> r.ttest(['in_transit', 'before_midtransit'], ['in_transit', 'after_midtransit'])
+        0.823997471194
         """
         sample1, sample2 = self._and_reduce(attrs1, attrs2)
 
@@ -87,12 +124,48 @@ class Residuals(object):
 
     def ks(self, attrs1, attrs2):
         """
-        Two-sample KS test.
+        Two-sample KS test from `~scipy.stats.ks_2samp`
 
         Parameters
         ----------
         attrs1 : list of attributes
+            List of conditions in first sample
         attrs2 : list of attributes
+            List of conditions in second sample
+
+        Returns
+        -------
+        pvalue : float
+            p value.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> import batman
+        >>> from salter import LightCurve
+
+        >>> params = batman.TransitParams()
+        >>> params.t0 = 0.5
+        >>> params.rp = 0.1
+        >>> params.per = 1
+        >>> params.duration = 0.3
+        >>> params.inc = 90
+        >>> params.w = 90
+        >>> params.ecc = 0
+        >>> params.a = 10
+        >>> params.limb_dark = 'quadratic'
+        >>> params.u = [0.2, 0.1]
+
+        >>> transits = [LightCurve(times=i + np.linspace(0, 1, 500),
+        >>>                        fluxes=np.random.randn(500),
+        >>>                        params=params) for i in range(10)]
+        >>> r = Residuals(transits, params)
+
+        >>> r.ks('out_of_transit', 'in_transit')
+        0.91710727901331124
+
+        >>> r.ks(['in_transit', 'before_midtransit'], ['in_transit', 'after_midtransit'])
+        0.39171715554793468
         """
         sample1, sample2 = self._and_reduce(attrs1, attrs2)
 
@@ -100,12 +173,49 @@ class Residuals(object):
 
     def anderson(self, attrs1, attrs2):
         """
-        k-sample Anderson test
+        k-sample Anderson test from `~scipy.stats.anderson_ksamp`.
 
         Parameters
         ----------
         attrs1 : list of attributes
+            List of conditions in first sample
         attrs2 : list of attributes
+            List of conditions in second sample
+
+        Returns
+        -------
+        sig : float
+            significance level (see `~scipy.stats.anderson_ksamp`)
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> import batman
+        >>> from salter import LightCurve
+
+        >>> params = batman.TransitParams()
+        >>> params.t0 = 0.5
+        >>> params.rp = 0.1
+        >>> params.per = 1
+        >>> params.duration = 0.3
+        >>> params.inc = 90
+        >>> params.w = 90
+        >>> params.ecc = 0
+        >>> params.a = 10
+        >>> params.limb_dark = 'quadratic'
+        >>> params.u = [0.2, 0.1]
+
+        >>> transits = [LightCurve(times=i + np.linspace(0, 1, 500),
+        >>>                        fluxes=np.random.randn(500),
+        >>>                        params=params) for i in range(10)]
+        >>> r = Residuals(transits, params)
+
+        >>> r.anderson('out_of_transit', 'in_transit')
+        1.1428634099527666
+
+        >>> r.anderson(['in_transit', 'before_midtransit'], ['in_transit', 'after_midtransit'])
+        0.2792395871784852
+
         """
         sample1, sample2 = self._and_reduce(attrs1, attrs2)
 
