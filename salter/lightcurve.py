@@ -696,14 +696,12 @@ class TransitLightCurve(LightCurve):
         """
         q1_init, q2_init = u2q(*self.params.u)
         initp = [self.params.rp, q1_init, q2_init]
-        print('initp', initp)
+
         bounds = [(0.1 * self.params.rp, 2 * self.params.rp), (0, 1), (0, 1)]
         results = fmin_l_bfgs_b(self.chi2_lc_3param, initp, approx_grad=True,
                                 bounds=bounds, iprint=0)
-        print(results)
         bestp = results[0]
         best_rp, best_q1, best_q2 = bestp
-        print('bestp', bestp)
         self.params.rp = best_rp
         self.params.u = q2u(best_q1, best_q2)
 
