@@ -717,6 +717,17 @@ def concatenate_light_curves(light_curve_list, name=None):
 
 
 def subtract_add_divide(whole_lc, transits):
+    """
+    Normalize transit light curves in ``transits`` with the
+    "subtract-add-divide" method.
+
+    Parameters
+    ----------
+    whole_lc : `~salter.LightCurve` or subclass
+        Light curve over the whole kepler mission
+    transits : list of `~salter.LightCurve` or subclasses
+        Transit light curves
+    """
     # Compute maxes for each quarter
     available_quarters = whole_lc.get_available_quarters()
     quarters = [whole_lc.get_quarter(q) for q in whole_lc.get_available_quarters()]

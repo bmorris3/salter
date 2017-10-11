@@ -16,11 +16,11 @@ Let's use ensemble transit data. If we use transits with many different impact p
 
 2. In the repo, run this to construct and cache the database of kepler light curves (runtime = ~1 hr on conference wifi)
 ```
-python -c "from salter.cache import cache_light_curves; cache_light_curves()"
+python -c "from salter import cache_light_curves; cache_light_curves()"
 ```
 3. Run this to cache a local copy of the joined tables from the NASA Exoplanet Archive and the Exoplanet Orbit Database:
 ```
-python -c "from salter.cache import cache_planets_table; cache_planets_table()"
+python -c "from salter import cache_planets_table; cache_planets_table()"
 ```
 
 ### Example notebook: 

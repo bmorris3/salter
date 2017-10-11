@@ -12,7 +12,7 @@ __all__ = ['Residuals']
 class Residuals(object):
     def __init__(self, transits, params, buffer_duration=0.15):
         """
-        Object for managing transit light curve residuals.
+        Transit light curve residuals.
 
         Parameters
         ----------
@@ -48,6 +48,16 @@ class Residuals(object):
         self.after_midtransit = self.phases > 0
 
     def plot(self):
+        """
+        Generate a quick plot of the transit residuals.
+
+        Returns
+        -------
+        fig : `~matplotlib.pyplot.Figure`
+            Figure object
+        ax : `~matplotlib.pyplot.Axes`
+            axis object
+        """
         fig, ax = plt.subplots()
 
         ax.plot(self.phases[self.out_of_transit], self.residuals[self.out_of_transit], 'k.', alpha=0.3)
@@ -94,7 +104,7 @@ class Residuals(object):
         >>> import numpy as np
         >>> import batman
         >>> from salter import LightCurve
-
+        >>> # Create example transiting planet properties
         >>> params = batman.TransitParams()
         >>> params.t0 = 0.5
         >>> params.rp = 0.1
@@ -106,15 +116,16 @@ class Residuals(object):
         >>> params.a = 10
         >>> params.limb_dark = 'quadratic'
         >>> params.u = [0.2, 0.1]
-
+        >>> # Create example transit light curves:
         >>> transits = [LightCurve(times=i + np.linspace(0, 1, 500),
         >>>                        fluxes=np.random.randn(500),
         >>>                        params=params) for i in range(10)]
+        >>> # Create residuals object
         >>> r = Residuals(transits, params)
-
+        >>> # How significant is the difference between the means of the fluxes in and out-of-transit?
         >>> r.ttest('out_of_transit', 'in_transit')
         0.310504218041
-
+        >>> # How significant is the difference between the means of the in-transit fluxes before and after midtransit?
         >>> r.ttest(['in_transit', 'before_midtransit'], ['in_transit', 'after_midtransit'])
         0.823997471194
         """
@@ -143,7 +154,7 @@ class Residuals(object):
         >>> import numpy as np
         >>> import batman
         >>> from salter import LightCurve
-
+        >>> # Create example transiting planet properties
         >>> params = batman.TransitParams()
         >>> params.t0 = 0.5
         >>> params.rp = 0.1
@@ -155,15 +166,15 @@ class Residuals(object):
         >>> params.a = 10
         >>> params.limb_dark = 'quadratic'
         >>> params.u = [0.2, 0.1]
-
+        >>> # Create example transit light curves:
         >>> transits = [LightCurve(times=i + np.linspace(0, 1, 500),
         >>>                        fluxes=np.random.randn(500),
         >>>                        params=params) for i in range(10)]
         >>> r = Residuals(transits, params)
-
+        >>> # How significant is the difference between the distributions of the fluxes in and out-of-transit?
         >>> r.ks('out_of_transit', 'in_transit')
         0.91710727901331124
-
+        >>> # How significant is the difference between the distributions of the in-transit fluxes before and after midtransit?
         >>> r.ks(['in_transit', 'before_midtransit'], ['in_transit', 'after_midtransit'])
         0.39171715554793468
         """
@@ -192,7 +203,7 @@ class Residuals(object):
         >>> import numpy as np
         >>> import batman
         >>> from salter import LightCurve
-
+        >>> # Create example transiting planet properties
         >>> params = batman.TransitParams()
         >>> params.t0 = 0.5
         >>> params.rp = 0.1
@@ -204,18 +215,17 @@ class Residuals(object):
         >>> params.a = 10
         >>> params.limb_dark = 'quadratic'
         >>> params.u = [0.2, 0.1]
-
+        >>> # Create example transit light curves:
         >>> transits = [LightCurve(times=i + np.linspace(0, 1, 500),
         >>>                        fluxes=np.random.randn(500),
         >>>                        params=params) for i in range(10)]
         >>> r = Residuals(transits, params)
-
+        >>> # How significant is the difference between the distributions of the fluxes in and out-of-transit?
         >>> r.anderson('out_of_transit', 'in_transit')
         1.1428634099527666
-
+        >>> # How significant is the difference between the distributions of the in-transit fluxes before and after midtransit?
         >>> r.anderson(['in_transit', 'before_midtransit'], ['in_transit', 'after_midtransit'])
         0.2792395871784852
-
         """
         sample1, sample2 = self._and_reduce(attrs1, attrs2)
 

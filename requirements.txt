@@ -1,0 +1,8 @@
+numpy
+scipy
+matplotlib
+astropy
+astroquery
+batman-package
+kplr
+h5py
