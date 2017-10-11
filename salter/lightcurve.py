@@ -18,6 +18,7 @@ from scipy.optimize import fmin_l_bfgs_b
 
 from .params import kic_to_params
 from .limbdarkening import q2u, u2q
+from .cache import lc_archive
 
 __all__ = ['LightCurve', 'concatenate_transit_light_curves',
            'TransitLightCurve', 'concatenate_light_curves',
@@ -131,17 +132,17 @@ class LightCurve(object):
         self.params = params
 
     @classmethod
-    def from_hdf5(cls, hdf5_file, kic):
+    def from_hdf5(cls, kic):
         """
-        Load a light curve from ``hdf5_file`` with KIC number ``kic``
+        Load a light curve from the HDF5 light curve archive with KIC number
+        ``kic``.
 
         Parameters
         ----------
-        hdf5_file : `~h5py.File`
-            HDF5 light curve archive file stream
         kic: float
             KIC number
         """
+        hdf5_file = lc_archive.file
         mask_nans = np.logical_not(np.isnan(hdf5_file[str(kic)][:, 0]))
 
         name = str(kic)

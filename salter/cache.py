@@ -11,7 +11,7 @@ from astropy.utils.data import download_file
 from astropy.table import Column, unique, join
 
 __all__ = ['cache_light_curves', 'get_planets_table', 'cache_planets_table',
-           'planet_props']
+           'planet_props', 'lc_archive']
 
 
 kic_numbers_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -148,4 +148,23 @@ class PlanetProperties(object):
             self._table = get_planets_table()
         return self._table
 
+
+class LightCurveArchive(object):
+    """
+    Light curve HDF5 archive manager
+    """
+    def __init__(self):
+        self._file = None
+
+    @property
+    def file(self):
+        """
+        Return an open HDF5 file stream of the light curve archive.
+        """
+        if self._file is None:
+            self._file = h5py.File(light_curves_path, 'r')
+        return self._file
+
+
 planet_props = PlanetProperties()
+lc_archive = LightCurveArchive()
