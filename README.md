@@ -31,6 +31,7 @@ Open up the notebook `show_lc.ipynb` to see what the package can do.
 
 * numpy 
 * matplotlib
+* scipy
 * h5py, hdf5
 * astropy
 * batman

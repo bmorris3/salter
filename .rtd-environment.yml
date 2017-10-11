@@ -5,10 +5,12 @@ channels:
 
 dependencies:
     - astropy
+    - scipy
     - Cython
     - matplotlib
     - numpy
     - h5py
+    - astroquery
     - pip:
         - batman-package
         - kplr
