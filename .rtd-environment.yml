@@ -1,0 +1,14 @@
+name: salter 
+
+channels:
+    - astropy
+
+dependencies:
+    - astropy
+    - Cython
+    - matplotlib
+    - numpy
+    - h5py
+    - pip:
+        - batman-package
+        - kplr
