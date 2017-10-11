@@ -1,10 +1,10 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
+import os
 
 import numpy as np
 import kplr
 from astropy.io import ascii
-import os
 import h5py
 from astropy.utils.console import ProgressBar
 from astropy.utils.data import download_file
@@ -22,6 +22,9 @@ planet_table_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 light_curves_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                  os.path.pardir, 'data', 'light_curves.hdf5')
+
+stats_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          os.path.pardir, 'data', 'stats.hdf5')
 
 
 def cache_light_curves():

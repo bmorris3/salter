@@ -24,8 +24,8 @@ __all__ = ['LightCurve', 'concatenate_transit_light_curves',
            'TransitLightCurve', 'concatenate_light_curves',
            'subtract_add_divide']
 
-HDF5_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                os.path.pardir, 'data', 'light_curves.hdf5')
+LCARCHIVE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              os.path.pardir, 'data', 'light_curves.hdf5')
 
 
 def generate_lc_depth(times, depth, transit_params, exp_time=30/60/24):
@@ -599,10 +599,17 @@ class TransitLightCurve(LightCurve):
 
         # Remove polynomial baseline trend after subtracting the times by its
         # mean -- this improves numerical stability for polyfit
+
         downscaled_times = self.times.jd - self.times.jd.mean()
-        polynomial_baseline = np.polyfit(downscaled_times[mask][-near_transit],
-                                         self.fluxes[mask][-near_transit], order)
-        polynomial_baseline_fit = np.polyval(polynomial_baseline, downscaled_times)
+
+        if len(downscaled_times[mask][-near_transit]) > 0:
+            polynomial_baseline = np.polyfit(downscaled_times[mask][-near_transit],
+                                             self.fluxes[mask][-near_transit],
+                                             order)
+            polynomial_baseline_fit = np.polyval(polynomial_baseline,
+                                                 downscaled_times)
+        else:
+            polynomial_baseline_fit = np.ones_like(near_transit)
 
         if plots:
             fig, ax = plt.subplots(1, 2, figsize=(15,6))
@@ -647,32 +654,33 @@ class TransitLightCurve(LightCurve):
                                              outlier_tolerance_depth_factor=0.20,
                                              plots=False):
 
-        init_baseline_fit = self.fit_polynomial_baseline(order=order,
-                                                         cadence=cadence)
+        if len(self.times_jd) > 0:
+            init_baseline_fit = self.fit_polynomial_baseline(order=order,
+                                                             cadence=cadence)
 
-        # Subtract out a transit model
-        transit_model = generate_lc_depth(self.times_jd, self.params.rp**2, self.params)
+            # Subtract out a transit model
+            transit_model = generate_lc_depth(self.times_jd, self.params.rp**2, self.params)
 
-        lower_outliers = (transit_model*init_baseline_fit - self.fluxes >
-                          self.fluxes.mean() * outlier_tolerance_depth_factor *
-                          self.params.rp**2)
+            lower_outliers = (transit_model*init_baseline_fit - self.fluxes >
+                              self.fluxes.mean() * outlier_tolerance_depth_factor *
+                              self.params.rp**2)
 
-        self.errors[lower_outliers] *= outlier_error_multiplier
+            self.errors[lower_outliers] *= outlier_error_multiplier
 
-        final_baseline_fit = self.fit_polynomial_baseline(order=order,
-                                                          cadence=cadence,
-                                                          mask=~lower_outliers)
+            final_baseline_fit = self.fit_polynomial_baseline(order=order,
+                                                              cadence=cadence,
+                                                              mask=~lower_outliers)
 
-        self.fluxes = self.fluxes - final_baseline_fit
-        self.fluxes += quarterly_max
-        self.fluxes /= quarterly_max
-        self.errors /= quarterly_max
+            self.fluxes = self.fluxes - final_baseline_fit
+            self.fluxes += quarterly_max
+            self.fluxes /= quarterly_max
+            self.errors /= quarterly_max
 
-        if plots:
-            plt.errorbar(self.times.jd, self.fluxes, self.errors, fmt='o')
-            plt.plot(self.times.jd[lower_outliers],
-                     self.fluxes[lower_outliers], 'rx')
-            plt.show()
+            if plots:
+                plt.errorbar(self.times.jd, self.fluxes, self.errors, fmt='o')
+                plt.plot(self.times.jd[lower_outliers],
+                         self.fluxes[lower_outliers], 'rx')
+                plt.show()
 
     def chi2_lc_3param(self, p):
         """
