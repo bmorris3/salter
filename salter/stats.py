@@ -16,7 +16,7 @@ class Residuals(object):
 
         Parameters
         ----------
-        transits : list of `~salter.TransitLightCurve` objects
+        transits : list of (or single) `~salter.TransitLightCurve` objects
             list of transits
         params : `~batman.TransitParams()`
             transiting planet parameters
@@ -24,7 +24,10 @@ class Residuals(object):
             fraction of transit duration to ignore centered on ingress and
             egress.
         """
-        all_transits = concatenate_transit_light_curves(transits)
+        if type(transits) is list:
+            all_transits = concatenate_transit_light_curves(transits)
+        else:
+            all_transits = transits
 
         self.residuals = all_transits.fluxes - all_transits.transit_model()
         self.params = params

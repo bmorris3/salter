@@ -5,6 +5,7 @@ curves.
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
+from copy import deepcopy
 
 from astropy.time import Time
 import astropy.units as u
@@ -13,8 +14,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import batman
 from scipy.ndimage import gaussian_filter
+from scipy.optimize import fmin_l_bfgs_b
 
 from .params import kic_to_params
+from .limbdarkening import q2u, u2q
+from .cache import lc_archive
 
 __all__ = ['LightCurve', 'concatenate_transit_light_curves',
            'TransitLightCurve', 'concatenate_light_curves',
@@ -49,6 +53,41 @@ def generate_lc_depth(times, depth, transit_params, exp_time=30/60/24):
                             exp_time=exp_time)
     model_flux = m.light_curve(transit_params)
     return model_flux
+
+
+def lc_3param(times, rp, q1, q2, transit_params, exp_time=30/60/24):
+    """
+    Generate a model transit light curve.
+
+    Parameters
+    ----------
+    times : `~numpy.ndarray`
+        Times in JD
+    rp : float
+        Planet-to-star radius ratio
+    q1 : float on interval [0, 1]
+        Limb darkening parameter from Kipping 2013
+    q2 : float on interval [0, 1]
+        Limb darkening parameter from Kipping 2013
+    transit_params : `~batman.TransitParams`
+        Transit light curve parameters
+
+    Returns
+    -------
+    flux : `~numpy.ndarray`
+        Model light curve at ``times``
+    """
+    params = deepcopy(transit_params)
+
+    params.rp = rp
+    u1, u2 = q2u(q1, q2)
+    params.u = [u1, u2]
+
+    m = batman.TransitModel(params, times, supersample_factor=7,
+                            exp_time=exp_time)
+    model_flux = m.light_curve(params)
+    return model_flux
+
 
 
 class LightCurve(object):
@@ -93,17 +132,17 @@ class LightCurve(object):
         self.params = params
 
     @classmethod
-    def from_hdf5(cls, hdf5_file, kic):
+    def from_hdf5(cls, kic):
         """
-        Load a light curve from ``hdf5_file`` with KIC number ``kic``
+        Load a light curve from the HDF5 light curve archive with KIC number
+        ``kic``.
 
         Parameters
         ----------
-        hdf5_file : `~h5py.File`
-            HDF5 light curve archive file stream
         kic: float
             KIC number
         """
+        hdf5_file = lc_archive.file
         mask_nans = np.logical_not(np.isnan(hdf5_file[str(kic)][:, 0]))
 
         name = str(kic)
@@ -635,17 +674,37 @@ class TransitLightCurve(LightCurve):
                      self.fluxes[lower_outliers], 'rx')
             plt.show()
 
-    @classmethod
-    def from_dir(cls, path):
-        """Load light curve from numpy save files in ``path``"""
-        times, fluxes, errors, quarters = [np.loadtxt(os.path.join(path, '{0}.txt'.format(attr)))
-                                           for attr in ['times_jd', 'fluxes', 'errors', 'quarters']]
+    def chi2_lc_3param(self, p):
+        """
+        Compute chi^2 for a three-parameter light curve model with parameters
+        in tuple ``p`` consisting of the planet-star radius ratio, and two
+        limb-darkening parameters (Kipping 2013)
+        """
+        rp, q1, q2 = p
+        model = lc_3param(self.times_jd, rp, q2, q2, self.params)
 
-        if os.sep in path:
-            name = path.split(os.sep)[-1]
-        else:
-            name = path
-        return cls(times, fluxes, errors, quarters=quarters, name=name)
+        mask_nans = np.logical_not(np.isnan(self.fluxes) |
+                                   np.isnan(self.errors))
+
+        return np.sum((model[mask_nans] - self.fluxes[mask_nans])**2 /
+                      (2*self.errors[mask_nans])**2)
+
+    def fit_lc_3param(self):
+        """
+        Fit three-parameter light curve model, and replace the transit parameters
+        in ``self.params`` with the best fit planet-star radius ratio, and two
+        limb-darkening parameters (Kipping 2013).
+        """
+        q1_init, q2_init = u2q(*self.params.u)
+        initp = [self.params.rp, q1_init, q2_init]
+
+        bounds = [(0.1 * self.params.rp, 2 * self.params.rp), (0, 1), (0, 1)]
+        results = fmin_l_bfgs_b(self.chi2_lc_3param, initp, approx_grad=True,
+                                bounds=bounds, iprint=0)
+        bestp = results[0]
+        best_rp, best_q1, best_q2 = bestp
+        self.params.rp = best_rp
+        self.params.u = q2u(best_q1, best_q2)
 
 
 def concatenate_transit_light_curves(light_curve_list, name=None):
