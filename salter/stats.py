@@ -9,10 +9,52 @@ import matplotlib.pyplot as plt
 __all__ = ['Residuals']
 
 
+class CompositeProps(object):
+    def __init__(self, objects):
+        for obj in objects:
+            attrs = [i for i in dir(obj) if not i.startswith('_')]
+            for attr in attrs:
+                setattr(self, attr, getattr(obj, attr))
+
+
 class Residuals(object):
-    def __init__(self, transits, params, buffer_duration=0.15):
+    """
+    Transit light curve residuals.
+    """
+    def __init__(self, residuals=None, buffer_duration=0.15,
+                 params=None, phases=None):
+        self.residuals = residuals
+
+        egress_phase = params.duration/2/params.per
+
+        mask_nans = np.isnan(residuals)
+
+        buffer = buffer_duration * params.duration / params.per
+
+        out_of_transit = (((-egress_phase - buffer/2 > phases) |
+                           (egress_phase + buffer/2 < phases)) &
+                          np.logical_not(mask_nans))
+        in_transit = (((-egress_phase + buffer/2 < phases) &
+                           (egress_phase - buffer/2 > phases)) &
+                          np.logical_not(mask_nans))
+
+        self.out_of_transit = out_of_transit
+        self.in_transit = in_transit
+        self.phases = phases
+
+        before_midtransit = phases < 0
+        after_midtransit = phases > 0
+
+        self.before_midtransit = before_midtransit
+        self.after_midtransit = after_midtransit
+        self.egress_phase = egress_phase
+        self.params = params
+
+    @classmethod
+    def from_transits(cls, transits, params, buffer_duration=0.15):
         """
-        Transit light curve residuals.
+        Load transit residuals from a list of `~salter.TransitLightCurve`
+        objects.
 
         Parameters
         ----------
@@ -29,26 +71,40 @@ class Residuals(object):
         else:
             all_transits = transits
 
-        self.residuals = all_transits.fluxes - all_transits.transit_model()
-        self.params = params
-        self.egress_phase = params.duration/2/params.per
-        self.phases = all_transits.phases()
+        residuals = all_transits.fluxes - all_transits.transit_model()
 
-        mask_nans = np.isnan(self.residuals)
+        return cls(params=params, buffer_duration=buffer_duration,
+                   phases=all_transits.phases(), residuals=residuals)
 
-        buffer = buffer_duration * params.duration / params.per
+    @classmethod
+    def from_rms(cls, times, residuals, star, planet, buffer_duration=0.15):
+        """
+        Load residuals from an ``rms`` simulation.
 
-        out_of_transit = (((-self.egress_phase - buffer/2 > all_transits.phases()) |
-                           (self.egress_phase + buffer/2 < all_transits.phases())) &
-                          np.logical_not(mask_nans))
-        in_transit = (((-self.egress_phase + buffer/2 < all_transits.phases()) &
-                           (self.egress_phase - buffer/2 > all_transits.phases())) &
-                          np.logical_not(mask_nans))
+        Parameters
+        ----------
+        times : `~numpy.ndarray`
+            Times of each flux
+        residuals : `~numpy.ndarray`
+            Flux residual measurements
+        star : `~rms.Star`
+            Stellar properties
+        planet : `~rms.Planet`
+            Transiting planet parameters
+        buffer_duration : float
+            fraction of transit duration to ignore centered on ingress and
+            egress.
+        """
+        if len(residuals.shape) > 1:
+            times = times.ravel()
+            residuals = residuals.ravel()
 
-        self.out_of_transit = out_of_transit
-        self.in_transit = in_transit
-        self.before_midtransit = self.phases < 0
-        self.after_midtransit = self.phases > 0
+        params = CompositeProps([star, planet])
+        phase = ((times - params.t0) % params.per)/params.per
+        phase[phase > 0.5] -= 1.0
+
+        return cls(params=params, phases=phase, residuals=residuals,
+                   buffer_duration=buffer_duration)
 
     def plot(self):
         """

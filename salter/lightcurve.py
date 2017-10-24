@@ -280,7 +280,7 @@ class LightCurve(object):
         near_transit = ((phased < params.duration*(0.5 + oot_duration_fraction)) |
                         (phased > params.per - params.duration*(0.5 + oot_duration_fraction)))
         if flip:
-            near_transit = -near_transit
+            near_transit = ~near_transit
         sort_by_time = np.argsort(self.times[near_transit].jd)
         return dict(times=self.times[near_transit][sort_by_time],
                     fluxes=self.fluxes[near_transit][sort_by_time],
@@ -342,7 +342,8 @@ class LightCurve(object):
                 if plots:
                     plt.plot(self.times.jd[start_ind:end_ind],
                              self.fluxes[start_ind:end_ind], '.-')
-
+                if hasattr(start_ind, '__len__'):
+                    start_ind = start_ind[0]
                 parameters = dict(times=self.times[start_ind:end_ind],
                                   fluxes=self.fluxes[start_ind:end_ind],
                                   errors=self.errors[start_ind:end_ind],
@@ -496,8 +497,8 @@ class TransitLightCurve(LightCurve):
 
         # Remove linear baseline trend
         order = 1
-        linear_baseline = np.polyfit(self.times.jd[-near_transit],
-                                     self.fluxes[-near_transit], order)
+        linear_baseline = np.polyfit(self.times.jd[~near_transit],
+                                     self.fluxes[~near_transit], order)
         linear_baseline_fit = np.polyval(linear_baseline, self.times.jd)
 
         if plots:
@@ -602,9 +603,9 @@ class TransitLightCurve(LightCurve):
 
         downscaled_times = self.times.jd - self.times.jd.mean()
 
-        if len(downscaled_times[mask][-near_transit]) > 0:
-            polynomial_baseline = np.polyfit(downscaled_times[mask][-near_transit],
-                                             self.fluxes[mask][-near_transit],
+        if len(downscaled_times[mask][~near_transit]) > 0:
+            polynomial_baseline = np.polyfit(downscaled_times[mask][~near_transit],
+                                             self.fluxes[mask][~near_transit],
                                              order)
             polynomial_baseline_fit = np.polyval(polynomial_baseline,
                                                  downscaled_times)
