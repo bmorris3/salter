@@ -92,26 +92,30 @@ Transiting exoplanets provide a unique means to trace small-scale features on th
 The most informative scenario for constraining the latitude distribution of starspots occurs when the stellar rotation and planetary orbital axes are significantly misaligned \citep{llama2012}, as is the case for Hat-P-11 \citep{sanchis-ojeda2011}. In this geometry, the planet passes in front of the star in a nearly orthogonal direction to the rotation axis, mapping out a range of latitudes with each transit along a nearly constant line of stellar longitude. For Hat-P-11, two distinct active latitude bands have been discovered, which reveal a solar-like dynamo at work \citep{morris2017}. However, for most transiting systems the planetary orbit and stellar spin axes are well aligned, resulting in a fixed range of latitudes sampled by every transit, as in the Kepler 17 system \citep{davenport_phd}. While long term monitoring of these transiting systems allows us to track starspot evolution, the global spot distribution cannot be probed. Transiting multi-planet systems may provide another means to study a range of latitudes for a single star \citep[e.g. Kepler 186; ][]{kepler186f}, but the sample of such systems is currently quite small.
 
 
-Missions like \Kepler now routinely observe transits with the photometric precision required to detect these bumps \citep{borucki2010}, and indeed many \Kepler systems have had their spot properties measured from this technique \citep[e.g.][]{sanchis-ojeda2011, sanchis-ojeda2013}. In the best cases, for bright stars and with 1-minute cadence, hundreds of individual starspots have been detected \citep[e.g.][]{davenport_phd}, and fit with detailed forwarding modeling (Hebb et al. in prep). However, many transiting systems in \Kepler are either too faint, or have too slow of an observing cadence (e.g. the \Kepler 30-minute cadence), to resolve individual starspot bumps. Transits from these fainter stars may still be impacted by starspot crossing events, with the transit depth or even duration appearing to vary when monitoring for many transits due to changing numbers of starspots on the observable surface.
-
-
-
 %%%%%
 \begin{figure}[!t]
 \centering
 \includegraphics[width=3.5in]{diagram1}
 \caption{
-Schematic diagram of star with active starspot latitudes centered at $\sim$25$^\circ$ latitude, and three transiting exoplanets with impact parameters ranging between nearly b=1 (A) to  b=0 (C). The planet size is typical of a hot Jupiter, with $r_p/r_\star\sim0.11$.
+Schematic diagram of star with active starspot latitudes centered at $\sim$25$^\circ$ latitude, and three transiting exoplanets with impact parameters ranging between nearly b=1 (A) to  b=0 (C). The planet size is typical of a hot Jupiter, with $r_p/r_\star\approx 0.11$.
 }
 \label{fig:diagram1}
 \end{figure}
 
 
 Naturally, to detect a starspot bump in transit the transit chord as projected onto the star must intersect regions on the surface containing starspots. In Figure \ref{fig:diagram1} we demonstrate three identical transiting exoplanets with differing impact parameters, whose transits project onto different ranges in latitude on the star. The starspots are placed at typical latitudes for those found on the Sun, here centered at $\sim$25$^\circ$ latitude. In this case, the intermediate transit (planet B) with an impact factor of $b=0.5$ intersects the northern active latitude of the star. 
+POINT: WE CAN USE IMPACT PARAMETER TO PROBE LATITUDE
+
+
+
+
+Missions like \Kepler now routinely observe transits with the photometric precision required to detect these bumps \citep{borucki2010}, and indeed many \Kepler systems have had their spot properties measured from this technique \citep[e.g.][]{sanchis-ojeda2011, sanchis-ojeda2013}. In the best cases, for bright stars and with 1-minute cadence, hundreds of individual starspots have been detected \citep[e.g.][]{davenport_phd}, and fit with detailed forwarding modeling (Hebb et al. in prep). However, many transiting systems in \Kepler are either too faint, or have too slow of an observing cadence (e.g. the \Kepler 30-minute cadence), to resolve individual starspot bumps. Transits from these fainter stars may still be impacted by starspot crossing events, with transit depths or durations appearing to vary due to changing numbers of starspots on the observable surface.
+
 
 
 As we combine lots of transits, we get lots of scatter in vs out of transit!
 show example from Kepler17
+POINT: WE CAN USE ENSEMBLE OF POORLY RESOLVED TRANSITS TO QUANTIFY SPOTTEDNESS
 
 
 %%%%%
@@ -124,7 +128,12 @@ Overlay of every short-cadence \Kepler transit for Kepler 17 from \citet{davenpo
 \label{fig:kep17}
 \end{figure}
 
-Now lets use LOTS of transits, but vary the impact parameter
+
+
+
+the combination of using many transits for many systems w/ varying impact parameters enables us to make a map of the spottedness for many stars
+
+assumptions as we've drawn it... inclination, mutual inclination of planet/star (this called something else)
 
 note: a uniform distribution of impact parameters does NOT result in a uniform mapping of latitudes. hard to see high-$B$ spots due to foreshortening.
 
@@ -211,6 +220,7 @@ the real data -- its kinda rough, but sample size small...
 
 JRAD acknowledges support by an NSF Astronomy and Astrophysics Postdoctoral Fellowship under award AST-1501418. 
 
+JRAD acknowledges support from the DIRAC Institute in the Department of Astronomy at the University of Washington. The DIRAC Institute is supported through generous gifts from the Charles and Lisa Simonyi Fund for Arts and Sciences, and the Washington Research Foundation
 
 %%%%%%%%%%%%%%%%%
 \bibliography{/Users/james/Dropbox/references.bib}
